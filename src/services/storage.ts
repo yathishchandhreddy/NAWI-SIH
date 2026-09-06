@@ -21,6 +21,8 @@ const STORAGE_KEYS = {
   AUDIT_LOGS: 'nawi_audit_logs_v1',
   CURRENT_USER: 'nawi_current_user_v1',
   OFFLINE_DRAFTS: 'nawi_offline_drafts_v1',
+  LAST_ACTIVE_TEST: 'nawi_last_active_test_v1',
+  LAST_ACTIVE_REPORT: 'nawi_last_active_report_v1',
 };
 
 // Initial realistic Seed Users
@@ -724,8 +726,38 @@ class StorageRepository {
 
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEYS.TESTS, JSON.stringify(this.tests));
+      localStorage.setItem(STORAGE_KEYS.LAST_ACTIVE_TEST, savedRecord.testId || savedRecord.id);
+      if (savedRecord.reportId) {
+        localStorage.setItem(STORAGE_KEYS.LAST_ACTIVE_REPORT, savedRecord.reportId);
+      }
     }
     return savedRecord;
+  }
+
+  public getLastActiveTestId(): string | null {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(STORAGE_KEYS.LAST_ACTIVE_TEST);
+    }
+    return null;
+  }
+
+  public setLastActiveTestId(id: string): void {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.LAST_ACTIVE_TEST, id);
+    }
+  }
+
+  public getLastActiveReportId(): string | null {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(STORAGE_KEYS.LAST_ACTIVE_REPORT);
+    }
+    return null;
+  }
+
+  public setLastActiveReportId(id: string): void {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.LAST_ACTIVE_REPORT, id);
+    }
   }
 
   public deleteTest(id: string): boolean {

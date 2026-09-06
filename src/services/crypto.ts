@@ -173,40 +173,40 @@ export function createCanonicalReportPayload(test: TestRecord): string {
 }
 
 /**
- * Calculates SHA-256 hexadecimal hash string for any input string
+ * Calculates SHA-256 hexadecimal hash string synchronously using standard FIPS 180-4 implementation.
+ * Safe and instantaneous across all browser environments and sandboxed iframes.
  */
-export async function computeSha256(message: string): Promise<string> {
+export function computeSha256Sync(message: string): string {
   if (typeof message !== 'string') {
     throw new Error('computeSha256 requires a valid string message');
   }
 
   const encoder = new TextEncoder();
   const data = encoder.encode(message);
-
-  const subtle = typeof window !== 'undefined'
-    ? (window.crypto?.subtle || (window.crypto as any)?.webkitSubtle)
-    : (globalThis.crypto?.subtle);
-
-  if (subtle && typeof subtle.digest === 'function') {
-    try {
-      const hashBuffer = await subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-    } catch (subtleErr) {
-      console.warn('SubtleCrypto digest failed, falling back to standard SHA-256 implementation:', subtleErr);
-      return sha256Fallback(data);
-    }
-  }
-
   return sha256Fallback(data);
 }
 
 /**
- * Generates SHA-256 for a finalized test record
+ * Calculates SHA-256 hexadecimal hash string for any input string.
+ * Guaranteed to resolve immediately without hanging.
+ */
+export async function computeSha256(message: string): Promise<string> {
+  return computeSha256Sync(message);
+}
+
+/**
+ * Generates SHA-256 for a finalized test record synchronously.
+ */
+export function generateReportIntegrityHashSync(test: TestRecord): string {
+  const canonical = createCanonicalReportPayload(test);
+  return computeSha256Sync(canonical);
+}
+
+/**
+ * Generates SHA-256 for a finalized test record.
  */
 export async function generateReportIntegrityHash(test: TestRecord): Promise<string> {
-  const canonical = createCanonicalReportPayload(test);
-  return computeSha256(canonical);
+  return generateReportIntegrityHashSync(test);
 }
 
 /**

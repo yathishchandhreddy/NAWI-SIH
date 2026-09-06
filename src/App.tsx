@@ -61,6 +61,15 @@ const MainContent: React.FC = () => {
       } else if (target === 'reports' || target === 'verify') {
         setActiveReportId(recordId);
       }
+    } else if (target === 'reports') {
+      const activeReport =
+        storage.getLastActiveReportId() ||
+        activeReportId ||
+        storage.getLastActiveTestId() ||
+        activeTestId;
+      if (activeReport) {
+        setActiveReportId(activeReport);
+      }
     }
 
     setActiveTab(target);

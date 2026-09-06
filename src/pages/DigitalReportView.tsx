@@ -3,7 +3,7 @@ import QRCode from 'qrcode';
 import { storage } from '../services/storage';
 import { TestRecord } from '../types';
 import { formatValue } from '../rules/oimlR76';
-import { generateReportIntegrityHash } from '../services/crypto';
+import { generateReportIntegrityHashSync } from '../services/crypto';
 import {
   FileCheck2,
   Printer,
@@ -56,16 +56,28 @@ export const DigitalReportView: React.FC<DigitalReportViewProps> = ({
     const availableReports = [...finalized, ...approvedPending];
     setTests(availableReports);
 
-    if (selectedReportId) {
+    // Target priority:
+    // 1. Explicitly requested selectedReportId
+    // 2. Storage last active report ID
+    // 3. Storage last active test ID
+    const targetId =
+      selectedReportId || storage.getLastActiveReportId() || storage.getLastActiveTestId();
+
+    if (targetId) {
       const match = availableReports.find(
-        (t) => t.id === selectedReportId || t.testId === selectedReportId || t.reportId === selectedReportId
+        (t) => t.id === targetId || t.testId === targetId || t.reportId === targetId
       );
       if (match) {
         setActiveReport(match);
         return;
       }
     }
-    setActiveReport(availableReports[0] || null);
+
+    // Default to the most recently updated non-historical test (prefer newly completed tests over demo test0089)
+    const nonHistorical = availableReports.find(
+      (t) => t.reportId !== 'OIML-R76-2026-0089' && t.testId !== 'TEST-2026-0089'
+    );
+    setActiveReport(nonHistorical || availableReports[0] || null);
   }, [selectedReportId]);
 
   useEffect(() => {
@@ -76,34 +88,36 @@ export const DigitalReportView: React.FC<DigitalReportViewProps> = ({
       return;
     }
 
-    let isMounted = true;
-    setIsComputingHash(true);
+    // Initialize with existing SHA-256 hash immediately if present
+    if (activeReport.sha256Hash) {
+      setComputedHash(activeReport.sha256Hash);
+      setIsComputingHash(false);
+    } else {
+      setIsComputingHash(true);
+    }
     setHashError(null);
 
-    async function calculateFingerprint() {
-      try {
-        const hash = await generateReportIntegrityHash(activeReport);
-        if (isMounted) {
-          setComputedHash(hash);
-          if (!activeReport.sha256Hash || activeReport.sha256Hash !== hash) {
-            const updated = { ...activeReport, sha256Hash: hash };
-            storage.saveTest(updated);
-          }
-        }
-      } catch (err: any) {
-        if (isMounted) {
-          console.error('Failed to compute SHA-256 verification fingerprint:', err);
-          setHashError(err?.message || 'Cryptographic fingerprint calculation failed');
-          setComputedHash(null);
-        }
-      } finally {
-        if (isMounted) {
-          setIsComputingHash(false);
+    let isMounted = true;
+
+    try {
+      // Synchronously and deterministically compute SHA-256 fingerprint with zero hanging
+      const hash = generateReportIntegrityHashSync(activeReport);
+      if (isMounted) {
+        setComputedHash(hash);
+        setIsComputingHash(false);
+        if (!activeReport.sha256Hash || activeReport.sha256Hash !== hash) {
+          activeReport.sha256Hash = hash;
+          storage.saveTest(activeReport);
         }
       }
+    } catch (err: any) {
+      if (isMounted) {
+        console.error('Failed to compute SHA-256 verification fingerprint:', err);
+        setHashError(err?.message || 'Cryptographic fingerprint calculation failed');
+        setComputedHash(activeReport.sha256Hash || null);
+        setIsComputingHash(false);
+      }
     }
-
-    calculateFingerprint();
 
     return () => {
       isMounted = false;

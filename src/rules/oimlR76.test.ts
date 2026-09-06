@@ -291,6 +291,56 @@ export function runAllOimlR76UnitTests(): { total: number; passed: number; faile
     assert(failedZT.data.tarePassed === false, 'Test 12: Tare sub-test marked failed');
   }
 
+  // --- 13. Class III Instrument with e = 0.01 kg, Max = 30 kg (User-specified MPE Brackets) ---
+  {
+    const classIII_30kg: Instrument = {
+      ...standardClassIII,
+      id: 'inst-class-iii-30kg',
+      instrumentId: 'NAWI-2026-001',
+      manufacturer: 'Essae',
+      model: 'DS-215',
+      accuracyClass: 'III',
+      maxCapacity: 30,
+      minCapacity: 0.2,
+      capacityUnit: 'kg',
+      e: 10,
+      d: 10,
+      intervalUnit: 'g', // 10 g = 0.01 kg
+    };
+
+    // 0.5 kg load -> MPE ±0.005 kg (±0.5e)
+    const mpe0_5 = calculateR76MPE(classIII_30kg, 0.5);
+    assert(mpe0_5.mpe === 0.005, 'Test 13: 0.5 kg load MPE is ±0.005 kg');
+    assert(mpe0_5.mpeE === 0.5, 'Test 13: 0.5 kg load MPE coefficient is 0.5e');
+
+    // 2.0 kg load (200e) -> MPE ±0.01 kg (±1.0e)
+    const mpe2_0 = calculateR76MPE(classIII_30kg, 2.0);
+    assert(mpe2_0.mpe === 0.01, 'Test 13: 2.0 kg load MPE is ±0.01 kg');
+    assert(mpe2_0.mpeE === 1.0, 'Test 13: 2.0 kg load MPE coefficient is 1.0e');
+
+    // Indication = 2.01 kg at reference load 2.00 kg:
+    // error = +0.01 kg, absolute error = 0.01 kg, MPE = 0.01 kg -> MUST PASS!
+    const eval2kg = evaluateWeighingPointR76(classIII_30kg, 2.0, 2.01);
+    assert(eval2kg.point.error === 0.01, 'Test 13: 2.0 kg indication error is +0.01 kg');
+    assert(eval2kg.point.applicableMpeAbsolute === 0.01, 'Test 13: 2.0 kg applicable MPE is 0.01 kg');
+    assert(eval2kg.point.passed === true, 'Test 13: 2.0 kg with 2.01 kg indication passes (PASS)');
+
+    // 10.0 kg load -> MPE ±0.01 kg (±1.0e)
+    const mpe10 = calculateR76MPE(classIII_30kg, 10.0);
+    assert(mpe10.mpe === 0.01, 'Test 13: 10.0 kg load MPE is ±0.01 kg');
+    assert(mpe10.mpeE === 1.0, 'Test 13: 10.0 kg load MPE coefficient is 1.0e');
+
+    // 20.0 kg load -> MPE ±0.01 kg (±1.0e)
+    const mpe20 = calculateR76MPE(classIII_30kg, 20.0);
+    assert(mpe20.mpe === 0.01, 'Test 13: 20.0 kg load MPE is ±0.01 kg');
+    assert(mpe20.mpeE === 1.0, 'Test 13: 20.0 kg load MPE coefficient is 1.0e');
+
+    // 30.0 kg load -> MPE ±0.015 kg (±1.5e)
+    const mpe30 = calculateR76MPE(classIII_30kg, 30.0);
+    assert(mpe30.mpe === 0.015, 'Test 13: 30.0 kg load MPE is ±0.015 kg');
+    assert(mpe30.mpeE === 1.5, 'Test 13: 30.0 kg load MPE coefficient is 1.5e');
+  }
+
   const passedCount = testResults.filter((r) => r.passed).length;
   const failedCount = testResults.filter((r) => !r.passed).length;
 

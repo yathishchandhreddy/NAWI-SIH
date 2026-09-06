@@ -134,18 +134,40 @@ export function calculateR76MPE(
       }
       break;
 
-    case 'III':
-      if (scaleIntervals <= 500) {
-        baseMpeE = 0.5;
-        rangeDesc = '0 ≤ m ≤ 500 e';
-      } else if (scaleIntervals <= 2000) {
-        baseMpeE = 1.0;
-        rangeDesc = '500 e < m ≤ 2,000 e';
+    case 'III': {
+      // Class III instruments:
+      // When e = 0.01 kg (10 g), load brackets:
+      //   0 to 0.5 kg (0 to 500e nominal, <= 50e / 0.5 kg): ±0.5e = ±0.005 kg
+      //   >0.5 kg to 20 kg (500e to 2,000e nominal, 200e at 2 kg): ±1.0e = ±0.01 kg
+      //   >20 kg to 100 kg (>2,000e nominal): ±1.5e = ±0.015 kg
+      const eInKg = convertMass(activeE, activeEUnit, 'kg');
+      const loadInKg = convertMass(absLoad, instrument.capacityUnit, 'kg');
+
+      if (Math.abs(eInKg - 0.01) < 1e-4) {
+        if (loadInKg <= 0.500001 || scaleIntervals <= 50) {
+          baseMpeE = 0.5;
+          rangeDesc = '0 ≤ m ≤ 0.5 kg (0 to 500 e nominal, ±0.5 e = ±0.005 kg)';
+        } else if (loadInKg <= 20.000001 || scaleIntervals <= 2000) {
+          baseMpeE = 1.0;
+          rangeDesc = '>0.5 kg to 20 kg (500 e < m ≤ 2,000 e nominal, ±1.0 e = ±0.01 kg)';
+        } else {
+          baseMpeE = 1.5;
+          rangeDesc = 'm > 20 kg (m > 2,000 e nominal, ±1.5 e = ±0.015 kg)';
+        }
       } else {
-        baseMpeE = 1.5;
-        rangeDesc = 'm > 2,000 e';
+        if (scaleIntervals <= 500) {
+          baseMpeE = 0.5;
+          rangeDesc = '0 ≤ m ≤ 500 e';
+        } else if (scaleIntervals <= 2000) {
+          baseMpeE = 1.0;
+          rangeDesc = '500 e < m ≤ 2,000 e';
+        } else {
+          baseMpeE = 1.5;
+          rangeDesc = 'm > 2,000 e';
+        }
       }
       break;
+    }
 
     case 'IIII':
       if (scaleIntervals <= 50) {

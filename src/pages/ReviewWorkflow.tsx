@@ -239,9 +239,22 @@ export const ReviewWorkflow: React.FC<ReviewWorkflowProps> = ({
       )}
 
       {actionSuccess && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs flex items-center space-x-2 animate-in fade-in">
-          <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>{actionSuccess}</span>
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs flex items-center justify-between gap-2 animate-in fade-in">
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{actionSuccess}</span>
+          </div>
+          {selectedRecord?.reportId && (
+            <button
+              onClick={() =>
+                onNavigateToReport(selectedRecord.reportId || selectedRecord.testId)
+              }
+              className="px-3 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-medium rounded shadow-xs flex items-center space-x-1 shrink-0 transition-colors cursor-pointer"
+            >
+              <span>Open Digital Certificate</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       )}
 
