@@ -1,0 +1,6 @@
+{
+  "name": "NAWI OIML R-76 Test Report Generator",
+  "description": "Software for Generation of Test Reports for Non-Automatic Weighing Instruments (NAWI) as per OIML Recommendation R-76 for SIH 2026 (SIH26035).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
